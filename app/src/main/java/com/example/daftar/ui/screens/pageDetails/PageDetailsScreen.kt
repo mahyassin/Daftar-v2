@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -61,22 +62,9 @@ fun DetailsPageContent(modifier: Modifier = Modifier) {
 
         Text("10/ 11/ 2012")
 
-        Box(contentAlignment = Alignment.Center) {
-
-            Surface(shape = CircleShape, tonalElevation = 10.dp) {
-                Text("12", fontSize = 40.sp, modifier = Modifier.padding(4.dp))
-            }
-
-            Surface(
-                shape = CircleShape,
-                shadowElevation = 10.dp,
-                modifier = Modifier.padding(top = 12.dp).offset(y = 4.dp, x = 35.dp)
-            ) {
-                Icon(Icons.Default.Add, null)
-            }
-
-
-        }
+        TransactionBuble()
+        TransactionBuble()
+        TransactionBuble()
     }
 }
 
@@ -95,8 +83,36 @@ fun DetailsTopBar(modifier: Modifier = Modifier) {
     }
 }
 
+@Composable
+fun TransactionBuble(modifier: Modifier = Modifier) {
+    Box(contentAlignment = Alignment.Center, modifier = modifier.wrapContentSize().padding(20.dp)) {
+
+        Surface(shape = CircleShape, tonalElevation = 10.dp, modifier = Modifier.padding(8.dp)) {
+            Text("12", fontSize = 40.sp, modifier = Modifier.padding(4.dp))
+        }
+
+        Surface(
+            shape = CircleShape,
+            shadowElevation = 10.dp,
+            modifier = Modifier
+                .padding(top = 12.dp)
+                .align(Alignment.BottomEnd)
+        ) {
+            Icon(Icons.Default.Add, null)
+        }
+
+
+    }
+}
+
 @Preview
 @Composable
 private fun Contentprev() {
     DetailsPageContainer()
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun BublePrev() {
+    TransactionBuble()
 }
