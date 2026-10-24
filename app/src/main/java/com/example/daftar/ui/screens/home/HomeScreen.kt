@@ -44,7 +44,7 @@ import com.example.daftar.backend.localDb.Pages
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel,
-    onPageClick: (Int) -> Unit,
+    onPageClick: (Int, String, String) -> Unit,
 
     ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -57,7 +57,7 @@ fun Container(
     uiState: HomeUiState,
     pages: List<Pages>,
     eventHandler: (HomeEvents) -> Unit,
-    onPageClick: (Int) -> Unit,
+    onPageClick: (Int, String, String) -> Unit,
 ) {
     Scaffold(
         floatingActionButton = { AddNameButton( onclick = { eventHandler(it)}) },
@@ -87,7 +87,7 @@ fun HomeScreenContent(
     modifier: Modifier = Modifier,
     transactions: List<Pages>,
     eventHandler: (HomeEvents) -> Unit,
-    onPageClick: (Int) -> Unit,
+    onPageClick: (Int, String, String) -> Unit,
 ) {
     LazyVerticalGrid(GridCells.Fixed(1), modifier) {
         items(items = transactions, key = { it.id }){
@@ -141,7 +141,7 @@ fun ContactCard(
     credit: Int,
     id: Int,
     eventHandler: (HomeEvents) -> Unit,
-    onPageClick: (Int) -> Unit,
+    onPageClick: (Int, String, String) -> Unit,
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -158,7 +158,7 @@ fun ContactCard(
 
             Surface(modifier.weight(10f).clickable(
                 true,
-                onClick = { onPageClick(id) },
+                onClick = { onPageClick(id, name, number) },
             ), shadowElevation = 10.dp) {
                 Row(
                     horizontalArrangement =  Arrangement.SpaceBetween,
@@ -256,7 +256,7 @@ private fun prev() {
         uiState,
         transactions,
         { eventHandler(it) },
-        onPageClick = {}
+        onPageClick = { a, d,s -> {}}
     )
 }
 
@@ -270,7 +270,7 @@ private fun CardPrev() {
         59,
         0,
         eventHandler = {},
-        onPageClick = {}
+        onPageClick = {a, b,c -> }
     )
 }
 

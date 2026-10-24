@@ -20,7 +20,7 @@ class AppContainer(context: Context) {
             appContext,
             LocalDB::class.java,
             "transactions.db"
-        ).build()
+        ).fallbackToDestructiveMigration(false).build()
     }
 
     private val transactionRepo: TransactionRepo by lazy {
@@ -34,7 +34,12 @@ class AppContainer(context: Context) {
     val factory: ViewModelProvider.Factory by lazy {
         viewModelFactory {
             initializer { HomeViewModel(pagesReepo) }
-            initializer { PageDetailsViewModel(transactionRepo) }
+        }
+    }
+
+    fun pageDetailFactory(pageId: Int): ViewModelProvider.Factory{
+        return viewModelFactory {
+            initializer { PageDetailsViewModel(transactionRepo, pageId) }
         }
     }
 }

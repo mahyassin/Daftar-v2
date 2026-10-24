@@ -46,11 +46,20 @@ fun AppNavigation(modifier: Modifier = Modifier, container: AppContainer) {
         entryProvider = entryProvider {
             entry<Home> {
                 val homeViewModel: HomeViewModel = viewModel(factory = container.factory)
-                HomeScreen(viewModel = homeViewModel, onPageClick = { backStack.add(PageDetails(it))})
+                HomeScreen(
+                    viewModel = homeViewModel,
+                    onPageClick = { id, name , number ->
+                        backStack.add(PageDetails(id, name, number))
+                    }
+                )
             }
             entry<PageDetails> {
-                val pageDetailsViewModel: PageDetailsViewModel = viewModel(factory = container.factory)
-                PageDetailsScreen(viewModel = pageDetailsViewModel)
+                val pageDetailsViewModel: PageDetailsViewModel = viewModel(factory = container.pageDetailFactory(it.pageId))
+                PageDetailsScreen(
+                    viewModel = pageDetailsViewModel,
+                    pageName = it.pageName,
+                    pageNumber = it.pageNumber,
+                )
 
             }
         },
@@ -62,4 +71,4 @@ fun AppNavigation(modifier: Modifier = Modifier, container: AppContainer) {
 @Serializable
 data object Home: NavKey
 @Serializable
-data class PageDetails(val pageId: Int): NavKey
+data class PageDetails(val pageId: Int, val pageName: String, val pageNumber: String): NavKey

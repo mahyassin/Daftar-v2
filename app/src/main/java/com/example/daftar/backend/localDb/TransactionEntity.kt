@@ -8,6 +8,7 @@ import androidx.room.PrimaryKey
 data class Transaction (
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
+    val details: String,
     val credit: Int,
     val isPayed: Boolean,
     val pageId: Int,

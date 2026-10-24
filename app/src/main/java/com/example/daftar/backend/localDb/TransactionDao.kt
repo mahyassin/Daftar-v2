@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TransactionDao {
-    @Query("SELECT * FROM transactions ORDER BY id DESC")
-    fun observeTransaction(): Flow<List<Transaction>>
+    @Query("SELECT * FROM transactions where pageId = :pageId ORDER BY id DESC ")
+    fun observeTransaction(pageId: Int): Flow<List<Transaction>>
 
     @Insert
     suspend fun insert(name: Transaction)

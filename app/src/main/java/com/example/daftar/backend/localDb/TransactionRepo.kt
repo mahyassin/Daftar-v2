@@ -4,8 +4,8 @@ import kotlinx.coroutines.flow.Flow
 
 class TransactionRepo(private val dao: TransactionDao) {
 
-    fun observeTransaction(): Flow<List<Transaction>> {
-        return dao.observeTransaction()
+    fun observeTransaction(pageId: Int): Flow<List<Transaction>> {
+        return dao.observeTransaction(pageId)
     }
 
     suspend fun insertTransaction(transaction: Transaction){
