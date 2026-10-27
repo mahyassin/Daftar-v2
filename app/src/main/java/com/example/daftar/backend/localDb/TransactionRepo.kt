@@ -2,45 +2,34 @@ package com.example.daftar.backend.localDb
 
 import kotlinx.coroutines.flow.Flow
 
-class TransactionRepo(private val dao: TransactionDao) {
-
-    fun observeTransaction(pageId: Int): Flow<List<Transaction>> {
-        return dao.observeTransaction(pageId)
-    }
-
-    suspend fun insertTransaction(transaction: Transaction){
-        dao.insert(transaction)
-    }
-
-    suspend fun deleteTransaction(transaction: Transaction){
-        dao.delete(transaction)
-    }
-
-    fun getTransactionsForPage(id: Int){
-        dao.getTransactionsForPage(id)
-    }
-
+interface TransactionsRepository {
+    fun observeTransaction(pageId: Int): Flow<List<Transaction>>
+    suspend fun insertTransaction(transaction: Transaction)
+    suspend fun deleteTransaction(transaction: Transaction)
+    suspend fun settlePage(pageId: Int)
 }
 
-class PagesRepo(private val dao: PageDao){
-
-    fun observePages(): Flow<List<Pages>>{
-        return dao.observePages()
+class TransactionRepo(private val dao: TransactionDao) : TransactionsRepository {
+    override fun observeTransaction(pageId: Int) = dao.observeTransaction(pageId)
+    override suspend fun insertTransaction(transaction: Transaction) {
+        require(transaction.details.isNotBlank() && transaction.credit > 0)
+        dao.insert(transaction)
     }
+    override suspend fun deleteTransaction(transaction: Transaction) = dao.delete(transaction)
+    override suspend fun settlePage(pageId: Int) = dao.settlePage(pageId)
+}
 
-    fun getPageById(id: Int): Pages{
-        return dao.getPage(id)
-    }
+interface PagesRepository {
+    fun observePages(): Flow<List<PageBalance>>
+    suspend fun savePage(page: Pages)
+    suspend fun deleteById(id: Int)
+}
 
-    suspend fun savePage(page: Pages){
+class PagesRepo(private val dao: PageDao) : PagesRepository {
+    override fun observePages() = dao.observePages()
+    override suspend fun savePage(page: Pages) {
+        require(page.name.isNotBlank())
         dao.insert(page)
     }
-
-    suspend fun delete(page: Pages){
-        dao.delete(page)
-    }
-
-    suspend fun deleteById(id: Int){
-        dao.deleteById(id)
-    }
+    override suspend fun deleteById(id: Int) = dao.deleteById(id)
 }
