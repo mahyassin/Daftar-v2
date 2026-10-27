@@ -1,6 +1,11 @@
 package com.example.daftar.ui.screens.pageDetails
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideIn
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,10 +22,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.MoneyOff
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -31,16 +40,21 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.daftar.backend.localDb.Transaction
+import kotlin.math.abs
 
 @Composable
 fun PageDetailsScreen(
@@ -78,7 +92,13 @@ fun DetailsPageContainer(
             }
         }
     ) {
-        DetailsPageContent(transactions, modifier.padding(it), pageName, pageNumber)
+        DetailsPageContent(
+            transactions,
+            modifier.padding(it),
+            pageName,
+            pageNumber,
+            events = event
+        )
 
         AnimatedVisibility(uiState.isDialogOpen) {
             Dialog(onDismissRequest = {event(DetailsEvents.DissmissDialog)}) {
@@ -87,7 +107,9 @@ fun DetailsPageContainer(
                     event,
                     uiState.nameTextField,
                     uiState.priceField,
-                    tab = uiState.tabs
+                    tab = uiState.tabs,
+                    isEdit = false,
+                    transactionId = 0,
                 )
             }
         }
@@ -100,6 +122,7 @@ fun DetailsPageContent(
     modifier: Modifier = Modifier,
     name: String,
     number: String,
+    events: (DetailsEvents) -> Unit
 ) {
     Column(
         modifier.fillMaxSize(),
@@ -113,11 +136,13 @@ fun DetailsPageContent(
         Spacer(Modifier.height(20.dp))
 
 
-        LazyColumn() {
+        LazyColumn(horizontalAlignment = Alignment.CenterHorizontally) {
             items(transactions){
                 TransactionBuble(
                     credit = it.credit,
-                    name = it.details
+                    name = it.details,
+                    id = it.id,
+                    event = events
                 )
             }
         }
@@ -147,30 +172,73 @@ fun TransactionBuble(
     modifier: Modifier = Modifier,
     credit: Int,
     name: String,
+    id: Int,
+    event: (DetailsEvents) -> Unit
 ) {
+
+    val alignment = if(credit > 0) Alignment.BottomEnd else Alignment.BottomStart
+    val icon = if(credit > 0) Icons.Default.Add else Icons.Default.HorizontalRule
+    var isPressed by remember { mutableStateOf(false) }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
-        Text(name, color = Color.Gray)
+        Text(name, color = Color.Gray, modifier = Modifier.padding(top
+        = 40.dp))
 
-        Box(contentAlignment = Alignment.Center, modifier = modifier
-            .wrapContentSize()
-            .padding(bottom = 20.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AnimatedVisibility(isPressed) {
+                Icon(Icons.Default.Edit, null)
+            }   
 
-            Surface(shape = CircleShape, tonalElevation = 10.dp, modifier = Modifier.padding(8.dp)) {
-                Text("$credit", fontSize = 40.sp, modifier = Modifier.padding(4.dp))
-            }
-
-            Surface(
-                shape = CircleShape,
-                shadowElevation = 10.dp,
-                modifier = Modifier
-                    .padding(top = 12.dp)
-                    .align(Alignment.BottomEnd)
+            Box(contentAlignment = Alignment.Center, modifier = modifier
+                .wrapContentSize()
+                .padding()
             ) {
-                Icon(Icons.Default.Add, null)
+
+                Surface(
+                    shape = CircleShape,
+                    tonalElevation = 10.dp,
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .clickable(
+                            onClick = { isPressed = !isPressed }
+                        )
+
+                ) {
+                    Text("${abs(credit)}", fontSize = 40.sp, modifier = Modifier.padding(4.dp))
+                }
+
+                Surface(
+                    shape = CircleShape,
+                    shadowElevation = 10.dp,
+                    modifier = Modifier
+                        .padding(top = 12.dp)
+                        .align(alignment)
+
+                ) {
+                    Icon(icon, null)
+                }
+
+
             }
+
+            AnimatedVisibility(isPressed) {
+                IconButton (
+                    onClick = {
+                        event(DetailsEvents.DeleteTransaction(id))
+                        isPressed = false
+                    },
+                ){
+                    Icon(Icons.Default.Close, null)
+                }
+
+            }
+
         }
+
+       
     }
 
 }
@@ -182,7 +250,9 @@ fun AddTransactionDilaogContent(
     event: (DetailsEvents) -> Unit,
     name: String,
     price: String,
-    tab: DetailsTabs
+    tab: DetailsTabs,
+    isEdit: Boolean,
+    transactionId: Int,
     ) {
     Surface() {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -217,8 +287,17 @@ fun AddTransactionDilaogContent(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
 
-            TextButton(onClick = { event (DetailsEvents.AddItem(name, price)) }) {
-                Text("Add")
+            TextButton(
+                onClick = {
+                    if(isEdit) event(DetailsEvents.UpdateTransaction(transactionId))
+                    else {
+                        event(DetailsEvents.AddItem(name, price))
+                        event(DetailsEvents.DissmissDialog)
+                    }
+                }
+            ){
+                if(isEdit) Text("Done")
+                else Text("Add")
             }
 
         }
@@ -231,33 +310,37 @@ fun AddTransactionDilaogContent(
 @Composable
 private fun Contentprev() {
     val t = listOf(
-        Transaction(0,"sugar",5,false, 1),
-        Transaction(0,"sugar",5,false, 1),
-        Transaction(0,"sugar",5,false, 1),
-        Transaction(0,"sugar",5,false, 1),
-        Transaction(0,"sugar",5,false, 1),
-        Transaction(0,"sugar",5,false, 1),
-        Transaction(0,"sugar",5,false, 1),
+        Transaction(0,"sugar",15,false, 1),
+        Transaction(1,"sugar",-5,false, 1),
+        Transaction(2,"sugar",34,false, 1),
+        Transaction(3,"sugar",-2,false, 1),
+        Transaction(4,"sugar",35,false, 1),
+        Transaction(5,"sugar",5,false, 1),
+        Transaction(7,"sugar",5,false, 1),
 
     )
-//    DetailsPageContainer(pageNumber = "0599416872", pageName = "ahmad", transactions = t)
+    DetailsPageContainer(
+        pageNumber = "0599416872",
+        pageName = "ahmad",
+        transactions = t,
+        uiState = DetailsPageUiState(),
+        event = {  }
+    )
 }
 
-@Preview(showBackground = true)
-@Composable
-private fun BublePrev() {
-//    TransactionBuble()
-}
 
 @Preview
 @Composable
 private fun DialogPrev() {
-    AddTransactionDilaogContent(
-        event = {},
-        name = "",
-        price = "",
-        tab = DetailsTabs.Negitave
-    )
+//    AddTransactionDilaogContent(
+//        event = {},
+//        name = "",
+//        price = "",
+//        tab = DetailsTabs.Negitave,
+//        modifier = TODO(),
+//        isEdit = TODO(),
+//        transactionId = TODO()
+//    )
 }
 
 
@@ -282,6 +365,8 @@ sealed class DetailsEvents{
     data class NameTextFieldChange(val value: String): DetailsEvents()
     data class UpdateTab(val tab: DetailsTabs): DetailsEvents()
     data class AddItem(val itemName: String, val itemPrice: String): DetailsEvents()
+    data class DeleteTransaction(val id: Int): DetailsEvents()
+    data class UpdateTransaction(val id: Int): DetailsEvents()
 
 
 }

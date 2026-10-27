@@ -5,6 +5,7 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -15,11 +16,14 @@ interface TransactionDao {
     @Insert
     suspend fun insert(name: Transaction)
 
-    @Delete
-    suspend fun delete(name: Transaction)
+    @Query("Delete From transactions where id =:id")
+    suspend fun delete(id: Int)
 
     @Query("Select * From transactions where pageId = :id")
-    fun getTransactionsForPage(id: Int): Flow<List<Transaction>>
+    fun getTransactionsForPage(id: Int): Transaction
+
+    @Update
+    suspend fun updateTransaction(transaction: Transaction)
 
 }
 

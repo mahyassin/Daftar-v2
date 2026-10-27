@@ -30,7 +30,8 @@ class PageDetailsViewModel(private val repo: TransactionRepo, private val pageId
             is DetailsEvents.PriceTextFieldChange -> _uiState.update{ it.copy(priceField = event.value)}
             DetailsEvents.OnAddButtonPress -> _uiState.update { it.copy(isDialogOpen = true) }
             is DetailsEvents.UpdateTab -> _uiState.update { it.copy(tabs = event.tab) }
-
+            is DetailsEvents.DeleteTransaction -> deleteTransaction(event.id)
+            is DetailsEvents.UpdateTransaction -> updateTransaction(event.id)
         }
     }
 
@@ -40,6 +41,19 @@ class PageDetailsViewModel(private val repo: TransactionRepo, private val pageId
         val transaction = Transaction(0, itemName, credit, false, pageId)
         viewModelScope.launch {
             repo.insertTransaction(transaction)
+        }
+    }
+
+    fun deleteTransaction(id: Int){
+        viewModelScope.launch {
+            repo.deleteTransaction(id)
+        }
+    }
+
+    fun updateTransaction(id: Int){
+        viewModelScope.launch {
+            val t = repo.getTransactionsForPage(id)
+            repo.updateTransaction(t)
         }
     }
 

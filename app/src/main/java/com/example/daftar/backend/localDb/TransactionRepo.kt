@@ -12,12 +12,16 @@ class TransactionRepo(private val dao: TransactionDao) {
         dao.insert(transaction)
     }
 
-    suspend fun deleteTransaction(transaction: Transaction){
-        dao.delete(transaction)
+    suspend fun deleteTransaction(id: Int){
+        dao.delete(id)
     }
 
-    fun getTransactionsForPage(id: Int){
-        dao.getTransactionsForPage(id)
+    suspend fun updateTransaction(transaction: Transaction){
+        dao.updateTransaction(transaction)
+    }
+
+    fun getTransactionsForPage(id: Int): Transaction{
+        return dao.getTransactionsForPage(id)
     }
 
 }
