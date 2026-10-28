@@ -20,6 +20,31 @@ required. Android's configured system backup rules still apply.
 
 ## Build and test
 
+### Open in Android Studio
+
+The completed ledger is on `feat/complete-ledger`. A normal clone checks out
+`main`, which does not include those changes. To clone the completed version:
+
+```sh
+git clone --branch feat/complete-ledger https://github.com/mahyassin/Daftar-v2.git
+```
+
+1. Use an Android Studio version that supports **Android Gradle Plugin 9.4.1**.
+   If Studio reports an unsupported AGP version, update Studio first.
+2. Open the `Daftar-v2` folder containing `settings.gradle.kts`, rather than the
+   `app` subfolder.
+3. In SDK Manager, install **Android SDK Platform 37** and **Build-Tools 36.0.0**,
+   and accept their licenses.
+4. In Settings → Build, Execution, Deployment → Build Tools → Gradle, use the
+   project's Gradle wrapper. The project requests **JDK 25** through Gradle daemon
+   JVM criteria; allow the toolchain download or install JDK 25 locally.
+5. Sync the project, then run **Build → Generate App Bundles or APKs → Generate APKs**
+   (the menu wording varies between Studio versions).
+
+The debug APK is generated at `app/build/outputs/apk/debug/app-debug.apk`.
+
+### Command line
+
 Install JDK 25 and the Android SDK (platform 37 and build tools 36.0.0), then set
 `ANDROID_HOME` or `sdk.dir` in an untracked `local.properties` file.
 
