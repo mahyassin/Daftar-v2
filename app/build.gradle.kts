@@ -49,6 +49,9 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     testImplementation(libs.junit)
+    testImplementation("org.xerial:sqlite-jdbc:3.50.3.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    androidTestImplementation("androidx.test:core-ktx:1.7.0")
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -73,9 +76,11 @@ dependencies {
 
     val lifecycleVersion = "2.11.0"
     // viewModel(factory = ...), ViewModel, and factory APIs
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:${lifecycleVersion}")
+
 
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:$lifecycleVersion")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:$lifecycleVersion")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-navigation3:$lifecycleVersion")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycleVersion")
 
 

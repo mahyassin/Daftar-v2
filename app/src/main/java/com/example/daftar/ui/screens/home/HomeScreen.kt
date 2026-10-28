@@ -1,300 +1,165 @@
 package com.example.daftar.ui.screens.home
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Contacts
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Money
-import androidx.compose.material3.Button
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import com.example.daftar.backend.localDb.Pages
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.daftar.backend.ledgerTotals
+import com.example.daftar.backend.localDb.PageBalance
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel,
     onPageClick: (Int, String, String) -> Unit,
-
-    ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val pages by viewModel.pages.collectAsState()
-    Container(uiState, pages, { viewModel.handleHomeEvent(it) }, onPageClick)
-}
-
-@Composable
-fun Container(
-    uiState: HomeUiState,
-    pages: List<Pages>,
-    eventHandler: (HomeEvents) -> Unit,
-    onPageClick: (Int, String, String) -> Unit,
 ) {
-    Scaffold(
-        floatingActionButton = { AddNameButton( onclick = { eventHandler(it)}) },
-        bottomBar = { BottomBar(isName =  uiState.isName) }
-    ) {
-        HomeScreenContent(Modifier.padding(it), pages, eventHandler, onPageClick)
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val pages by viewModel.pages.collectAsStateWithLifecycle()
+    var deleting by remember { mutableStateOf<PageBalance?>(null) }
+    val event = viewModel::handleHomeEvent
 
-        AnimatedVisibility(
-            visible =  uiState.isDialogOpen
-        ) {
-            Dialog(onDismissRequest = {eventHandler(HomeEvents.DissmisDialog)}) {
-                AddPageWindowContent(
-                    eventHandler = eventHandler,
-                    name = uiState.nameTextField,
-                    number = uiState.numberTextField
+    Scaffold(
+        modifier = modifier,
+        topBar = { TopAppBar(title = { Text("Daftar") }) },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { event(HomeEvents.OnActionButtonPressed) }) {
+                Icon(Icons.Default.Add, contentDescription = "Add customer page")
+            }
+        },
+        bottomBar = {
+            NavigationBar {
+                NavigationBarItem(
+                    selected = state.tab == HomeTab.Pages,
+                    onClick = { event(HomeEvents.SelectTab(HomeTab.Pages)) },
+                    icon = { Icon(Icons.Default.Contacts, null) }, label = { Text("Pages") },
+                )
+                NavigationBarItem(
+                    selected = state.tab == HomeTab.Overview,
+                    onClick = { event(HomeEvents.SelectTab(HomeTab.Overview)) },
+                    icon = { Icon(Icons.Default.Money, null) }, label = { Text("Overview") },
                 )
             }
-        }
-
-    }
-
-}
-
-
-@Composable
-fun HomeScreenContent(
-    modifier: Modifier = Modifier,
-    transactions: List<Pages>,
-    eventHandler: (HomeEvents) -> Unit,
-    onPageClick: (Int, String, String) -> Unit,
-) {
-    LazyVerticalGrid(GridCells.Fixed(1), modifier) {
-        items(items = transactions, key = { it.id }){
-            ContactCard(
-                Modifier,
-                it.name,
-                it.number,
-                it.credit,
-                it.id,
-                eventHandler,
-                onPageClick = onPageClick
-            )
-        }
-    }
-}
-
-@Composable
-fun AddNameButton(modifier: Modifier = Modifier , onclick: (HomeEvents) -> Unit) {
-    FloatingActionButton(
-        onClick = { onclick(HomeEvents.OnActionButtonPressed) },
-    ) {
-        Icon(Icons.Default.Add, contentDescription = null)
-    }
-}
-
-@Composable
-fun BottomBar(
-    modifier: Modifier = Modifier,
-    isName: Boolean,
-) {
-    NavigationBar() {
-        NavigationBarItem(
-            onClick = {},
-            icon = { Icon(Icons.Default.Contacts, null) },
-            selected = isName,
-        )
-
-        NavigationBarItem(
-            onClick = {},
-            icon = { Icon(Icons.Default.Money, null)},
-            selected = !isName,
-        )
-    }
-}
-
-@Composable
-fun ContactCard(
-    modifier: Modifier = Modifier,
-    name: String,
-    number: String,
-    credit: Int,
-    id: Int,
-    eventHandler: (HomeEvents) -> Unit,
-    onPageClick: (Int, String, String) -> Unit,
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 16.dp)
-    ) {
-
-
-
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)) {
-
-            Surface(modifier.weight(10f).clickable(
-                true,
-                onClick = { onPageClick(id, name, number) },
-            ), shadowElevation = 10.dp) {
-                Row(
-                    horizontalArrangement =  Arrangement.SpaceBetween,
-                    verticalAlignment =  Alignment.CenterVertically,
-                    modifier = Modifier.padding(8.dp)
+        },
+    ) { padding ->
+        Column(Modifier.padding(padding).fillMaxSize()) {
+            if (!state.isDialogOpen) state.error?.let { ErrorMessage(it) }
+            if (state.isLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 96.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text(name)
-                    Text("$credit ₪")
+                    if (state.tab == HomeTab.Overview) {
+                        val totals = ledgerTotals(pages.map { it.credit })
+                        item {
+                            Card(Modifier.fillMaxWidth()) {
+                                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("Balance overview", style = MaterialTheme.typography.titleLarge)
+                                    Text("Customers owe you: ${totals.owed} ₪")
+                                    Text("Customer credit: ${totals.customerCredit} ₪")
+                                    Text("Net balance: ${totals.net} ₪")
+                                    Text("${pages.size} customer pages")
+                                }
+                            }
+                        }
+                    }
+                    if (pages.isEmpty()) {
+                        item { Text("No customer pages yet. Tap + to add your first page.", Modifier.padding(16.dp)) }
+                    }
+                    items(pages, key = { it.id }) { page ->
+                        Card(Modifier.fillMaxWidth()) {
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(
+                                    Modifier.weight(1f).clickable { onPageClick(page.id, page.name, page.number) }.padding(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                                ) {
+                                    Text(page.name, style = MaterialTheme.typography.titleMedium)
+                                    if (page.number.isNotBlank()) Text(page.number)
+                                    Text(balanceLabel(page.credit), color = MaterialTheme.colorScheme.primary)
+                                }
+                                IconButton(enabled = !state.isSaving, onClick = { deleting = page }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Delete ${page.name}")
+                                }
+                            }
+                        }
+                    }
                 }
             }
-
-
-            Surface(modifier
-                .width(20.dp)
-                .height(20.dp),
-                shadowElevation = (1).dp,
-            ) {
-                IconButton({ eventHandler(HomeEvents.DeletePage(id)) }){
-                    Icon(Icons.Default.Clear, null)
+        }
+    }
+    if (state.isDialogOpen) {
+        AlertDialog(
+            onDismissRequest = { event(HomeEvents.DissmisDialog) },
+            title = { Text("Add customer page") },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = state.nameTextField,
+                        onValueChange = { event(HomeEvents.OnNameTextFieldChange(it)) },
+                        label = { Text("Name") }, singleLine = true, enabled = !state.isSaving,
+                    )
+                    OutlinedTextField(
+                        value = state.numberTextField,
+                        onValueChange = { event(HomeEvents.OnNumberTextFieldChange(it)) },
+                        label = { Text("Phone number (optional)") }, singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        enabled = !state.isSaving,
+                    )
+                    state.error?.let { ErrorMessage(it) }
                 }
-            }
-        }
-        Surface(modifier
-            .wrapContentSize(),
-            shadowElevation = 10.dp) {
-            Row(
-                horizontalArrangement =  Arrangement.Center,
-                verticalAlignment =  Alignment.CenterVertically,
-                modifier = Modifier.padding(8.dp).wrapContentHeight()
-            ) {
-                Text(number)
-            }
-
-        }
-
+            },
+            confirmButton = {
+                TextButton(enabled = !state.isSaving, onClick = {
+                    event(HomeEvents.AddPageEvent(state.nameTextField, state.numberTextField))
+                }) { Text(if (state.isSaving) "Saving…" else "Add page") }
+            },
+            dismissButton = {
+                TextButton(enabled = !state.isSaving, onClick = { event(HomeEvents.DissmisDialog) }) { Text("Cancel") }
+            },
+        )
     }
-
-
-
-}
-
-@Composable
-fun AddPageWindowContent(
-    modifier: Modifier = Modifier,
-    eventHandler: (HomeEvents) -> Unit,
-    name: String,
-    number: String,
-) {
-    Surface() {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            val smallPadding = Modifier.padding(8.dp)
-            Text("add page", modifier = smallPadding)
-            TextField(
-                value = name,
-                onValueChange = { eventHandler(HomeEvents.OnNameTextFieldChange(it))},
-                label = { Text("page name") },
-                modifier = smallPadding,
-            )
-
-            TextField(
-                value = number,
-                onValueChange = {eventHandler(HomeEvents.OnNumberTextFieldChange(it))},
-                label = { Text("page number") },
-                modifier = smallPadding,
-            )
-
-            Button(onClick = {
-                eventHandler(HomeEvents.AddPageEvent(name, number))
-                eventHandler(HomeEvents.DissmisDialog)
-            }) {
-                Text("Add Page")
-            }
-        }
+    deleting?.let { page ->
+        AlertDialog(
+            onDismissRequest = { deleting = null },
+            title = { Text("Delete ${page.name}?") },
+            text = { Text("This permanently deletes this page and all its debts and payments.") },
+            confirmButton = {
+                TextButton(enabled = !state.isSaving, onClick = {
+                    event(HomeEvents.DeletePage(page.id)); deleting = null
+                }) { Text("Delete") }
+            },
+            dismissButton = { TextButton(onClick = { deleting = null }) { Text("Cancel") } },
+        )
     }
 }
 
-@Preview
-@Composable
-private fun prev() {
-    val uiState = HomeUiState( isName =  true)
-    val transactions = listOf(
-        Pages(0, "ahmad", "0032424523", 40,),
-        Pages(1, "ahmad", "0032424523", 40,),
-        Pages(2, "ahmad", "0032424523", 40,),
-        Pages(3, "ahmad", "0032424523", 40,),
-        Pages(4, "ahmad", "0032424523", 40,),
-        Pages(5, "ahmad", "0032424523", 40,),
-        Pages(6, "ahmad", "0032424523", 40,),
-
-    )
-    fun eventHandler(event : HomeEvents) {
-
-    }
-    Container(
-        uiState,
-        transactions,
-        { eventHandler(it) },
-        onPageClick = { a, d,s -> {}}
-    )
+fun balanceLabel(balance: Long): String = when {
+    balance > 0 -> "Owes you: $balance ₪"
+    balance < 0 -> "Customer credit: ${-balance} ₪"
+    else -> "Settled: 0 ₪"
 }
 
-@Preview
 @Composable
-private fun CardPrev() {
-    ContactCard(
-        modifier = Modifier,
-        "ahmad",
-        "0599416872",
-        59,
-        0,
-        eventHandler = {},
-        onPageClick = {a, b,c -> }
-    )
-}
-
-data class HomeUiState(
-    val isName: Boolean = false,
-    val isDialogOpen: Boolean = false,
-    val nameTextField: String = "",
-    val numberTextField: String = "",
-)
-
-sealed class HomeEvents{
-    object OnActionButtonPressed: HomeEvents()
-    object DissmisDialog: HomeEvents()
-    data class OnNameTextFieldChange(val name: String): HomeEvents()
-    data class OnNumberTextFieldChange(val number: String): HomeEvents()
-    data class AddPageEvent(val name: String, val number: String): HomeEvents()
-    data class DeletePage(val id: Int): HomeEvents()
-    data class NavigateToDetails(val id: Int): HomeEvents()
-
-}
-
-
-@Preview
-@Composable
-private fun AddPageAlertprev() {
-//    AddPageWindowContent()
+fun ErrorMessage(message: String) {
+    Text(message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(12.dp))
 }

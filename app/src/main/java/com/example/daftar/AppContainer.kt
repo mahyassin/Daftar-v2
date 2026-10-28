@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.room.Room
 import com.example.daftar.backend.localDb.LocalDB
+import com.example.daftar.backend.localDb.DatabaseMigrations
 import com.example.daftar.backend.localDb.PagesRepo
 import com.example.daftar.backend.localDb.TransactionRepo
 import com.example.daftar.ui.screens.home.HomeViewModel
@@ -20,20 +21,20 @@ class AppContainer(context: Context) {
             appContext,
             LocalDB::class.java,
             "transactions.db"
-        ).fallbackToDestructiveMigration(false).build()
+        ).addMigrations(*DatabaseMigrations.ALL).build()
     }
 
     private val transactionRepo: TransactionRepo by lazy {
         TransactionRepo(database.getTransactionsDao())
     }
 
-    private val pagesReepo: PagesRepo by lazy {
+    private val pagesRepo: PagesRepo by lazy {
         PagesRepo(database.getPageDao())
     }
 
     val factory: ViewModelProvider.Factory by lazy {
         viewModelFactory {
-            initializer { HomeViewModel(pagesReepo) }
+            initializer { HomeViewModel(pagesRepo) }
         }
     }
 
