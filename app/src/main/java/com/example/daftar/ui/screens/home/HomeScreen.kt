@@ -1,17 +1,27 @@
 package com.example.daftar.ui.screens.home
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Money
+import androidx.compose.material.icons.filled.AutoStories
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.text.style.TextOverflow
+import com.example.daftar.ui.components.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,17 +43,59 @@ fun HomeScreen(
     val pages by viewModel.pages.collectAsStateWithLifecycle()
     var deleting by remember { mutableStateOf<PageBalance?>(null) }
     val event = viewModel::handleHomeEvent
+    // Keep each tab's position when Crossfade disposes its outgoing content.
+    val pagesListState = rememberLazyListState()
+    val overviewListState = rememberLazyListState()
 
     Scaffold(
         modifier = modifier,
-        topBar = { TopAppBar(title = { Text("Daftar") }) },
+        topBar = {
+            TopAppBar(
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer
+                        ) {
+                            Icon(
+                                Icons.Default.AutoStories,
+                                null,
+                                Modifier
+                                    .padding(10.dp)
+                                    .size(22.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Column {
+                            Text(
+                                "Daftar",
+                                style = MaterialTheme.typography.titleLarge
+                            )
+                            Text(
+                                "A little clarity, every day",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+            )
+        },
         floatingActionButton = {
-            FloatingActionButton(onClick = { event(HomeEvents.OnActionButtonPressed) }) {
-                Icon(Icons.Default.Add, contentDescription = "Add customer page")
-            }
+            ExtendedFloatingActionButton(
+                onClick = { event(HomeEvents.OnActionButtonPressed) },
+                icon = { Icon(Icons.Default.Add, null) },
+                text = { Text("New customer") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            )
         },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(containerColor = MaterialTheme.colorScheme.background, tonalElevation = 0.dp) {
                 NavigationBarItem(
                     selected = state.tab == HomeTab.Pages,
                     onClick = { event(HomeEvents.SelectTab(HomeTab.Pages)) },
@@ -62,43 +114,73 @@ fun HomeScreen(
             if (state.isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 96.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    if (state.tab == HomeTab.Overview) {
-                        val totals = ledgerTotals(pages.map { it.credit })
-                        item {
-                            Card(Modifier.fillMaxWidth()) {
-                                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Text("Balance overview", style = MaterialTheme.typography.titleLarge)
-                                    Text("Customers owe you: ${totals.owed} ₪")
-                                    Text("Customer credit: ${totals.customerCredit} ₪")
-                                    Text("Net balance: ${totals.net} ₪")
-                                    Text("${pages.size} customer pages")
-                                }
+                Crossfade(
+                    targetState = state.tab,
+                    animationSpec = tween(220),
+                    label = "Ledger tab"
+                ) { tab ->
+                    val totals = ledgerTotals(pages.map { it.credit })
+                    LazyColumn(
+                        state = if (tab == HomeTab.Pages) pagesListState else overviewListState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 104.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        item(key = "summary") {
+                            BalancePanel(
+                                title = if (tab == HomeTab.Pages) "Customers owe you" else "Net balance",
+                                amount = if (tab == HomeTab.Pages) totals.owed else totals.net,
+                                caption = if (tab == HomeTab.Pages) "Your customer accounts, all in one place."
+                                    else "Receivables minus customer credit.",
+                            )
+                        }
+                        if (tab == HomeTab.Overview) {
+                            item(key = "overview_heading") { SectionHeading("The bigger picture", "A clear view of your ledger") }
+                            item(key = "receivables") { MetricRow("Customers owe you", totals.owed, Icons.Default.ArrowUpward, debt = true) }
+                            item(key = "credit") { MetricRow("Customer credit", totals.customerCredit, Icons.Default.ArrowDownward) }
+                        }
+                        item(key = "customers_heading") {
+                            SectionHeading("Customer pages", "${pages.size} ${if (pages.size == 1) "customer" else "customers"} in your ledger")
+                        }
+                        if (pages.isEmpty()) {
+                            item(key = "empty") {
+                                LedgerEmptyState(
+                                    "Start a fresh page",
+                                    "Add your first customer to keep debts and payments together.",
+                                    "Add customer", { event(HomeEvents.OnActionButtonPressed) },
+                                )
                             }
                         }
-                    }
-                    if (pages.isEmpty()) {
-                        item { Text("No customer pages yet. Tap + to add your first page.", Modifier.padding(16.dp)) }
-                    }
-                    items(pages, key = { it.id }) { page ->
-                        Card(Modifier.fillMaxWidth()) {
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
+                        items(pages, key = { it.id }) { page ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth().animateItem(),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
                             ) {
-                                Column(
-                                    Modifier.weight(1f).clickable { onPageClick(page.id, page.name, page.number) }.padding(16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                                ) {
-                                    Text(page.name, style = MaterialTheme.typography.titleMedium)
-                                    if (page.number.isNotBlank()) Text(page.number)
-                                    Text(balanceLabel(page.credit), color = MaterialTheme.colorScheme.primary)
-                                }
-                                IconButton(enabled = !state.isSaving, onClick = { deleting = page }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Delete ${page.name}")
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    Row(
+                                        modifier = Modifier.weight(1f)
+                                            .clickable(onClickLabel = "Open ${page.name}") { onPageClick(page.id, page.name, page.number) }
+                                            .padding(16.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    ) {
+                                        CustomerAvatar(page.name)
+                                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            Text(page.name, style = MaterialTheme.typography.titleMedium,
+                                                maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                            if (page.number.isNotBlank()) Text(page.number,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            BalanceBadge(page.credit)
+                                        }
+                                    }
+                                    IconButton(
+                                        enabled = !state.isSaving,
+                                        colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+                                        onClick = { deleting = page },
+                                    ) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Delete ${page.name}",
+                                            modifier = Modifier.size(20.dp))
+                                    }
                                 }
                             }
                         }
@@ -110,15 +192,18 @@ fun HomeScreen(
     if (state.isDialogOpen) {
         AlertDialog(
             onDismissRequest = { event(HomeEvents.DissmisDialog) },
-            title = { Text("Add customer page") },
+            icon = { Icon(Icons.Default.Contacts, null) },
+            title = { Text("A new customer page") },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
+                        modifier = Modifier.fillMaxWidth(),
                         value = state.nameTextField,
                         onValueChange = { event(HomeEvents.OnNameTextFieldChange(it)) },
                         label = { Text("Name") }, singleLine = true, enabled = !state.isSaving,
                     )
                     OutlinedTextField(
+                        modifier = Modifier.fillMaxWidth(),
                         value = state.numberTextField,
                         onValueChange = { event(HomeEvents.OnNumberTextFieldChange(it)) },
                         label = { Text("Phone number (optional)") }, singleLine = true,
@@ -129,7 +214,7 @@ fun HomeScreen(
                 }
             },
             confirmButton = {
-                TextButton(enabled = !state.isSaving, onClick = {
+                Button(enabled = !state.isSaving, onClick = {
                     event(HomeEvents.AddPageEvent(state.nameTextField, state.numberTextField))
                 }) { Text(if (state.isSaving) "Saving…" else "Add page") }
             },
@@ -161,5 +246,10 @@ fun balanceLabel(balance: Long): String = when {
 
 @Composable
 fun ErrorMessage(message: String) {
-    Text(message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(12.dp))
+    Surface(
+        color = MaterialTheme.colorScheme.errorContainer,
+        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        shape = MaterialTheme.shapes.small,
+        modifier = Modifier.padding(12.dp).fillMaxWidth().animateContentSize(),
+    ) { Text(message, modifier = Modifier.padding(12.dp), style = MaterialTheme.typography.bodyMedium) }
 }

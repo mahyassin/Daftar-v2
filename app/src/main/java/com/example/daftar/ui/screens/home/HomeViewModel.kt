@@ -36,6 +36,7 @@ class HomeViewModel(private val repo: PagesRepository) : ViewModel() {
         }
     }
 
+
     private fun savePage(name: String, number: String) {
         if (name.isBlank() || name.trim().length > 120 || number.trim().length > 40) {
             _uiState.update { it.copy(error = "Enter a name (up to 120 characters) and a number up to 40 characters.") }

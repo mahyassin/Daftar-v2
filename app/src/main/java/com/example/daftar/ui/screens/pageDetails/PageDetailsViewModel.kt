@@ -43,14 +43,16 @@ class PageDetailsViewModel(private val repo: TransactionsRepository, private val
     }
 
     private fun insertTransaction(name: String, price: String) {
+
+        val usedName = if(name.isBlank()) "item" else name
         val amount = parseAmount(price)
-        if (name.isBlank() || name.trim().length > 200 || amount == null) {
+        if (name.trim().length > 200 || amount == null) {
             _uiState.update { it.copy(error = "Enter a description (up to 200 characters) and a whole amount from 1 to 2,147,483,647 ₪.") }
             return
         }
         val payment = _uiState.value.tabs == DetailsTabs.Payment
         write("Could not save this entry. Please try again.") {
-            repo.insertTransaction(Transaction(details = name.trim(), credit = amount, isPayed = payment, pageId = pageId))
+            repo.insertTransaction(Transaction(details = usedName.trim(), credit = amount, isPayed = payment, pageId = pageId))
             _uiState.update { it.copy(isDialogOpen = false, nameTextField = "", priceField = "", tabs = DetailsTabs.Debt) }
         }
     }

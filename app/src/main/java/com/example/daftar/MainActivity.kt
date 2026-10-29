@@ -1,5 +1,13 @@
 package com.example.daftar
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -39,8 +47,18 @@ class MainActivity : ComponentActivity() {
 fun AppNavigation(modifier: Modifier = Modifier, container: AppContainer) {
 
     val backStack = rememberNavBackStack(Home)
+    val direction = if (LocalLayoutDirection.current == LayoutDirection.Ltr) 1 else -1
 
     NavDisplay(
+        modifier = modifier,
+        transitionSpec = {
+            (fadeIn(tween(280)) + slideInHorizontally(tween(280)) { direction * it / 8 }) togetherWith
+                (fadeOut(tween(180)) + slideOutHorizontally(tween(280)) { -direction * it / 12 })
+        },
+        popTransitionSpec = {
+            (fadeIn(tween(240)) + slideInHorizontally(tween(240)) { -direction * it / 12 }) togetherWith
+                (fadeOut(tween(180)) + slideOutHorizontally(tween(240)) { direction * it / 8 })
+        },
         entryDecorators = listOf(
             rememberSaveableStateHolderNavEntryDecorator(),
             rememberViewModelStoreNavEntryDecorator(),
